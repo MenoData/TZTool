@@ -44,14 +44,14 @@ import javax.xml.stream.events.XMLEvent;
  * a serialized repository file with name &quot;winzone.ser&quot;. </p>
  *
  * @author  Meno Hochschild
- * @since   2.3
+ * @since   1.0
  */
 /*[deutsch]
  * <p>Kompiliert die originale CLDR-Datei &quot;windowsZones.xml&quot; in
  * eine serialisierte Datei mit dem Namen &quot;winzone.ser&quot;. </p>
  *
  * @author  Meno Hochschild
- * @since   2.3
+ * @since   1.0
  */
 public class WinZoneCompiler {
 

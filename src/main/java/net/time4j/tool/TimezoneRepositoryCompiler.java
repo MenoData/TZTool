@@ -92,7 +92,7 @@ import static net.time4j.ClockUnit.SECONDS;
  * the application has write access. </p>
  *
  * @author  Meno Hochschild
- * @since   2.3
+ * @since   1.0
  */
 /*[deutsch]
  * <p>Compiler zum &Uuml;bersetzen von Zeitzonen-Dateien im Olson-Format. </p>
@@ -115,7 +115,7 @@ import static net.time4j.ClockUnit.SECONDS;
  * liegt und das Programm Schreibrechte besitzt. </p>
  *
  * @author  Meno Hochschild
- * @since   2.3
+ * @since   1.0
  */
 public class TimezoneRepositoryCompiler {
 

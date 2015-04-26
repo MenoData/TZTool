@@ -1181,7 +1181,7 @@ public class TimezoneRepositoryCompiler {
 
             while ((entry = inStream.getNextEntry()) != null) {
                 byte[] data = new byte[2048];
-                int count = 0;
+                int count;
 
                 if (entry.isNormalFile()) {
                     ByteArrayOutputStream bos =
@@ -1204,7 +1204,6 @@ public class TimezoneRepositoryCompiler {
                     System.err.println(ioe.getMessage());
                 }
             }
-			inStream = null;
         }
 
         return contents;
@@ -1224,7 +1223,7 @@ public class TimezoneRepositoryCompiler {
         try {
             for (File subdir : directory.listFiles()) {
                 byte[] data = new byte[2048];
-                int count = 0;
+                int count;
 
                 if (subdir.isFile()) {
                     inStream =
@@ -1249,7 +1248,6 @@ public class TimezoneRepositoryCompiler {
                     System.err.println(ioe.getMessage());
                 }
             }
-			inStream = null;
         }
 
         return contents;
@@ -1336,36 +1334,26 @@ public class TimezoneRepositoryCompiler {
 
     private static void printOptions() {
 
-        StringBuilder sb = new StringBuilder(512);
-        sb.append("Usage of timezone compiler with command line options:");
-        sb.append(LF);
-
-        sb.append("-help      Print this usage message");
-        sb.append(LF);
-
-        sb.append("-verbose   Print details during execution");
-        sb.append(LF);
-
-        sb.append("-workdir   Set working directory which contains timezone ");
-        sb.append("data by giving next command line argument as absolute path");
-        sb.append(LF);
-
-        sb.append("-unpack    Unpack timezone archive to subdirectory");
-        sb.append(LF);
-
-        sb.append("-compile   Compile timezone data ");
-        sb.append("(archives or subdirectories)");
-        sb.append(LF);
-
-        sb.append("-version   Use only given timezone version ");
-        sb.append("instead of newest available version ");
-        sb.append("(example: -version 2011n)");
-        sb.append(LF);
-
-        sb.append("-lmt       Include LMT zone entries during compilation");
-        sb.append(LF);
-
-        System.out.println(sb.toString());
+        System.out.println(
+            "Usage of timezone compiler with command line options:"
+            + LF
+            + "-help      Print this usage message"
+            + LF
+            + "-verbose   Print details during execution"
+            + LF
+            + "-workdir   Set working directory which contains timezone "
+            + "data by giving next command line argument as absolute path"
+            + LF
+            + "-unpack    Unpack timezone archive to subdirectory"
+            + LF
+            + "-compile   Compile timezone data " + "(archives or subdirectories)"
+            + LF
+            + "-version   Use only given timezone version "
+            + "instead of newest available version "
+            + "(example: -version 2011n)"
+            + LF
+            + "-lmt       Include LMT zone entries during compilation"
+            + LF);
 
     }
 
@@ -1800,7 +1788,7 @@ public class TimezoneRepositoryCompiler {
             int startIndex = (fields[0].equals("Zone") ? 2 : 0);
 
             try {
-                String rawField = fields[startIndex + 0];
+                String rawField = fields[startIndex];
                 if (rawField.equals("-")) {
                     throw new IllegalArgumentException(
                         "Undefined raw offset: " + id);

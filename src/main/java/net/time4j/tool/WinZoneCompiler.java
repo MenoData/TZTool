@@ -295,27 +295,22 @@ public class WinZoneCompiler {
             oos.writeObject(data);
             System.out.println("Successfully created: " + target);
         } finally {
-            if (oos != null) {
-                oos.close();
-            }
+            oos.close();
         }
  
     }
 
     private static void printOptions() {
 
-        StringBuilder sb = new StringBuilder(512);
-        sb.append("Usage of winzone compiler with command line options:");
-        sb.append(LF);
-
-        sb.append("-help      Print this usage message");
-        sb.append(LF);
-
-        sb.append("-workdir   Set working directory which contains timezone ");
-        sb.append("data by giving next command line argument as absolute path");
-        sb.append(LF);
-
-        System.out.println(sb.toString());
+        String help =
+            "Usage of winzone compiler with command line options:"
+            + LF
+            + "-help      Print this usage message"
+            + LF
+            + "-workdir   Set working directory which contains timezone "
+            + "data by giving next command line argument as absolute path"
+            + LF;
+        System.out.println(help);
 
     }
 

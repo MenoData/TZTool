@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.time4j</groupId>
     <artifactId>time4j-tool</artifactId>
-    <version>1.2</version>
+    <version>1.5</version>
     <packaging>jar</packaging>
     <name>Time4J-Tool</name>
 

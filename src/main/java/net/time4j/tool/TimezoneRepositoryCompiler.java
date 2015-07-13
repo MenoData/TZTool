@@ -42,6 +42,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -754,24 +755,24 @@ public class TimezoneRepositoryCompiler {
                 "Cannot create subdirectory for compiled version: " + subdir);
         }
 
-        ObjectOutputStream oos =
-            new ObjectOutputStream(
+        DataOutputStream dos =
+            new DataOutputStream(
                 new FileOutputStream(
                     new File(subdir, TZDATA + ".repository")));
         try {
-            oos.writeByte('t');
-            oos.writeByte('z');
-            oos.writeByte('r');
-            oos.writeByte('e');
-            oos.writeByte('p');
-            oos.writeByte('o');
-            oos.writeUTF(version);
-            this.compile(oos, zones, rules);
-            this.compileLinks(oos, zones.keySet(), links);
-            this.compileLeapSeconds(oos, leaps, expires);
+            dos.writeByte('t');
+            dos.writeByte('z');
+            dos.writeByte('r');
+            dos.writeByte('e');
+            dos.writeByte('p');
+            dos.writeByte('o');
+            dos.writeUTF(version);
+            this.compile(dos, zones, rules);
+            this.compileLinks(dos, zones.keySet(), links);
+            this.compileLeapSeconds(dos, leaps, expires);
         } finally {
             try {
-                oos.close();
+                dos.close();
             } catch (IOException ex) {
                 // ignored
             }
@@ -798,12 +799,12 @@ public class TimezoneRepositoryCompiler {
     }
 
     private void compile(
-        ObjectOutputStream oos,
+        DataOutputStream dos,
         Map<String, List<ZoneLine>> zoneMap,
         Map<String, List<RuleLine>> ruleMap
     ) throws IOException {
 
-        oos.writeInt(zoneMap.size());
+        dos.writeInt(zoneMap.size());
 
         for (Map.Entry<String, List<ZoneLine>> zoneEntry : zoneMap.entrySet()) {
             String zoneID = zoneEntry.getKey();
@@ -905,8 +906,14 @@ public class TimezoneRepositoryCompiler {
                         ZonalOffset.ofTotalSeconds(initialOffset),
                         transitions,
                         rules);
-                oos.writeUTF(zoneID);
+                dos.writeUTF(zoneID);
+                ByteArrayOutputStream bos = new ByteArrayOutputStream(8192 * 10);
+                ObjectOutputStream oos = new ObjectOutputStream(bos);
                 oos.writeObject(history);
+                byte[] data = bos.toByteArray();
+                oos.close();
+                dos.writeInt(data.length);
+                dos.write(data);
             } catch (IllegalArgumentException iae) {
                 throw new IllegalArgumentException(
                     "Inconsistent data found for: " + zoneID,
@@ -917,7 +924,7 @@ public class TimezoneRepositoryCompiler {
     }
 
     private void compileLinks(
-        ObjectOutputStream oos,
+        DataOutputStream dos,
         Set<String> zones,
         List<LinkLine> links
     ) throws IOException {
@@ -948,31 +955,33 @@ public class TimezoneRepositoryCompiler {
             normalized.put(alias, index);
         }
 
-        oos.writeShort(normalized.size());
+        dos.writeShort(normalized.size());
 
         for (String alias : normalized.keySet()) {
-            oos.writeUTF(alias);
-            oos.writeShort(normalized.get(alias).shortValue());
+            dos.writeUTF(alias);
+            dos.writeShort(normalized.get(alias).shortValue());
         }
 
     }
 
     private void compileLeapSeconds(
-        ObjectOutputStream oos,
+        DataOutputStream dos,
         List<LeapLine> leaps,
         PlainDate expires
     ) throws IOException {
 
-        oos.writeShort(leaps.size());
+        dos.writeShort(leaps.size());
 
         for (LeapLine ll : leaps) {
-            oos.writeShort(ll.year);
-            oos.writeByte(ll.month);
-            oos.writeByte(ll.day);
-            oos.writeByte(ll.shift);
+            dos.writeShort(ll.year);
+            dos.writeByte(ll.month);
+            dos.writeByte(ll.day);
+            dos.writeByte(ll.shift);
         }
 
-        oos.writeObject(expires);
+        dos.writeShort(expires.getYear());
+        dos.writeByte(expires.getMonth());
+        dos.writeByte(expires.getDayOfMonth());
 
     }
 

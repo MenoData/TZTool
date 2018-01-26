@@ -1015,10 +1015,14 @@ public class TimezoneRepositoryCompiler {
     ) {
 
         List<RuleLine> lines = new ArrayList<RuleLine>(rules.size());
+        boolean hasNegativeDST = false;
 
         for (RuleLine rline : rules) {
             if ((rline.from <= year) && (rline.to >= year)) {
                 lines.add(rline);
+            }
+            if (rline.pattern.getSavings() < 0) {
+                hasNegativeDST = true;
             }
         }
 
@@ -1035,7 +1039,7 @@ public class TimezoneRepositoryCompiler {
             }
         }
 
-        return (lines.isEmpty() ? ZERO_DST : oldDst);
+        return (lines.isEmpty() ? (hasNegativeDST ? new DST(0, true) : ZERO_DST) : oldDst);
 
     }
 
@@ -2058,10 +2062,8 @@ public class TimezoneRepositoryCompiler {
         //~ Konstruktoren -------------------------------------------------
 
         private DST() {
-            super();
+            this(0, false);
 
-            this.amount = 0;
-            this.maxmode = false;
         }
 
         DST(DaylightSavingRule rule) {
@@ -2072,10 +2074,18 @@ public class TimezoneRepositoryCompiler {
         }
 
         DST(int amount) {
+            this(amount, false);
+
+        }
+
+        DST(
+            int amount,
+            boolean maxmode
+        ) {
             super();
 
             this.amount = amount;
-            this.maxmode = false;
+            this.maxmode = maxmode;
         }
 
     }

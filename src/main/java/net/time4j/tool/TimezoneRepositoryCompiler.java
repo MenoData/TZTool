@@ -156,13 +156,18 @@ public class TimezoneRepositoryCompiler {
         tmp1.add("checklinks.awk");
         tmp1.add("checktab.awk");
         tmp1.add("leapseconds.awk");
-        tmp1.add("Makefile");
+        tmp1.add("zishrink.awk");
         tmp1.add("zoneinfo2tdf.pl");
         FILES_IGNORED_ALWAYS = Collections.unmodifiableList(tmp1);
 
         List<String> tmp2 = new ArrayList<String>();
-        tmp2.add("Theory");
+        tmp2.add("calendars");
+        tmp2.add("version");
+        tmp1.add("Makefile");
+        tmp2.add("Theory"); // only exists in older tzdb-versions
+        tmp2.add("theory.html");
         tmp2.add("CONTRIBUTING");
+        tmp2.add("LICENSE");
         tmp2.add("NEWS");
         tmp2.add("README");
         FILES_IGNORED_BY_COMPILER = Collections.unmodifiableList(tmp2);

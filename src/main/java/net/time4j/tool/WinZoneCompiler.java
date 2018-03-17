@@ -1,6 +1,6 @@
 /*
  * -----------------------------------------------------------------------
- * Copyright © 2013-2015 Meno Hochschild, <http://www.menodata.de/>
+ * Copyright © 2013-2018 Meno Hochschild, <http://www.menodata.de/>
  * -----------------------------------------------------------------------
  * This file (WinZoneCompiler.java) is part of project Time4J.
  *
@@ -20,6 +20,8 @@
  */
 
 package net.time4j.tool;
+
+import net.time4j.tz.Timezone;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -262,7 +264,7 @@ public class WinZoneCompiler {
 
         for (String tzid : id.split(" ")) {
             // assumption: no ambivalent mapping from ids to names
-            data.put("WINDOWS~" + tzid, name);
+            data.put("WINDOWS~" + Timezone.normalize(tzid).canonical(), name);
         }
 
     }

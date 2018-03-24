@@ -1,6 +1,6 @@
 /*
  * -----------------------------------------------------------------------
- * Copyright © 2013-2015 Meno Hochschild, <http://www.menodata.de/>
+ * Copyright © 2013-2018 Meno Hochschild, <http://www.menodata.de/>
  * -----------------------------------------------------------------------
  * This file (TimezoneRepositoryCompiler.java) is part of project Time4J.
  *
@@ -140,37 +140,22 @@ public class TimezoneRepositoryCompiler {
     private static final String[] SHORT_DAYS =
         {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 
-    private static final List<String> FILES_IGNORED_ALWAYS;
-    private static final List<String> FILES_IGNORED_BY_COMPILER;
+    private static final List<String> FILES_ACCEPTED_BY_COMPILER;
 
     static {
-        List<String> tmp1 = new ArrayList<String>();
-        tmp1.add("yearistype.sh");
-        tmp1.add("factory");
-        tmp1.add("systemv");
-        tmp1.add("pacificnew");
-        tmp1.add("backzone");
-        tmp1.add("solar87");
-        tmp1.add("solar88");
-        tmp1.add("solar89");
-        tmp1.add("checklinks.awk");
-        tmp1.add("checktab.awk");
-        tmp1.add("leapseconds.awk");
-        tmp1.add("zishrink.awk");
-        tmp1.add("zoneinfo2tdf.pl");
-        FILES_IGNORED_ALWAYS = Collections.unmodifiableList(tmp1);
-
         List<String> tmp2 = new ArrayList<String>();
-        tmp2.add("calendars");
-        tmp2.add("version");
-        tmp1.add("Makefile");
-        tmp2.add("Theory"); // only exists in older tzdb-versions
-        tmp2.add("theory.html");
-        tmp2.add("CONTRIBUTING");
-        tmp2.add("LICENSE");
-        tmp2.add("NEWS");
-        tmp2.add("README");
-        FILES_IGNORED_BY_COMPILER = Collections.unmodifiableList(tmp2);
+        tmp2.add("africa");
+        tmp2.add("antarctica");
+        tmp2.add("asia");
+        tmp2.add("australasia");
+        tmp2.add("backward");
+        tmp2.add("etcetera");
+        tmp2.add("europe");
+        tmp2.add("leapseconds");
+        tmp2.add("leap-seconds.list"); // only for expiry date
+        tmp2.add("northamerica");
+        tmp2.add("southamerica");
+        FILES_ACCEPTED_BY_COMPILER = Collections.unmodifiableList(tmp2);
     }
 
     private static final Comparator<RuleLine> RC = new RuleComparator();
@@ -497,9 +482,6 @@ public class TimezoneRepositoryCompiler {
         try {
             for (Map.Entry<String, String> entry : contents.entrySet()) {
                 String name = entry.getKey();
-                if (FILES_IGNORED_ALWAYS.contains(name)) {
-                    continue;
-                }
                 File file = new File(subdir, name);
                 if (this.verbose) {
                     System.out.println("Unpacking " + name + " to " + file);
@@ -639,10 +621,7 @@ public class TimezoneRepositoryCompiler {
 
             String key = e.getKey();
 
-            if (
-                FILES_IGNORED_ALWAYS.contains(key)
-                || FILES_IGNORED_BY_COMPILER.contains(key)
-            ) {
+            if (!FILES_ACCEPTED_BY_COMPILER.contains(key)) {
                 continue;
             } else if (this.verbose && !key.endsWith(".tab")) {
                 System.out.println(

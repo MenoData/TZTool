@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.time4j</groupId>
     <artifactId>time4j-tool</artifactId>
-    <version>2.3</version>
+    <version>2.5</version>
     <packaging>jar</packaging>
     <name>Time4J-Tool</name>
 
@@ -196,13 +196,13 @@
         <dependency>
             <groupId>net.time4j</groupId>
             <artifactId>time4j-core</artifactId>
-            <version>3.41</version>
+            <version>3.50</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>net.time4j</groupId>
             <artifactId>time4j-olson</artifactId>
-            <version>3.41</version>
+            <version>3.50</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

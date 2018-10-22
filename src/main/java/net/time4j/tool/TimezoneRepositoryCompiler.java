@@ -24,7 +24,6 @@ package net.time4j.tool;
 import net.time4j.ClockUnit;
 import net.time4j.Month;
 import net.time4j.PlainDate;
-import net.time4j.PlainTime;
 import net.time4j.PlainTimestamp;
 import net.time4j.Weekday;
 import net.time4j.base.GregorianMath;
@@ -68,8 +67,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.zip.GZIPInputStream;
-
-import static net.time4j.ClockUnit.SECONDS;
 
 
 /**
@@ -122,7 +119,6 @@ public class TimezoneRepositoryCompiler {
 
     //~ Statische Felder/Initialisierungen --------------------------------
 
-    private static final DST ZERO_DST = new DST();
     private static final String WORK_DIRECTORY_NAME = "tzrepo";
     private static final String TZDATA = "tzdata";
     private static final String TAR_GZ_EXTENSION = ".tar.gz";
@@ -789,7 +785,6 @@ public class TimezoneRepositoryCompiler {
         Map<String, List<RuleLine>> ruleMap
     ) throws IOException {
 
-        handleNegativeDST(ruleMap);
         dos.writeInt(zoneMap.size());
 
         for (Map.Entry<String, List<ZoneLine>> zoneEntry : zoneMap.entrySet()) {
@@ -800,14 +795,14 @@ public class TimezoneRepositoryCompiler {
                 new ArrayList<DaylightSavingRule>();
             ZoneLine previous = null;
             int initialOffset = 0;
-            DST dstOffset = ZERO_DST;
+            int dstOffset = 0;
             boolean hasLMT = true;
             int lmtCount = 0;
 
             for (ZoneLine current : zoneEntry.getValue()) {
                 if (previous == null) { // first line
                     if (current.fixedSaving != null) {
-                        dstOffset = new DST(current.fixedSaving.intValue());
+                        dstOffset = current.fixedSaving.intValue();
                     } else if (current.ruleName != null) {
                         List<RuleLine> rlines = ruleMap.get(current.ruleName);
                         RuleLine first = null;
@@ -826,15 +821,15 @@ public class TimezoneRepositoryCompiler {
                                 first.from,
                                 Long.MIN_VALUE);
                     }
-                    initialOffset = current.rawOffset + dstOffset.amount;
+                    initialOffset = current.rawOffset + dstOffset;
                 } else {
-                    DST oldDst = dstOffset;
-                    int shift = getShift(previous, oldDst.amount);
+                    int oldDst = dstOffset;
+                    int shift = getShift(previous, oldDst);
                     long startTime = previous.until - shift;
                     int startYear = getStartYear(startTime);
 
                     if (current.fixedSaving != null) {
-                        dstOffset = new DST(current.fixedSaving.intValue());
+                        dstOffset = current.fixedSaving.intValue();
                     } else if (current.ruleName != null) {
                         dstOffset =
                             getRuleOffset(
@@ -847,15 +842,15 @@ public class TimezoneRepositoryCompiler {
 
                     if (
                         (previous.rawOffset != current.rawOffset)
-                        || (dstOffset.amount != oldDst.amount)
+                        || (dstOffset != oldDst)
                     ) {
                         addTransition(
                             transitions,
                             new ZonalTransition(
                                 startTime,
-                                previous.rawOffset + oldDst.amount,
-                                current.rawOffset + dstOffset.amount,
-                                dstOffset.maxmode ? Integer.MAX_VALUE : dstOffset.amount));
+                                previous.rawOffset + oldDst,
+                                current.rawOffset + dstOffset,
+                                dstOffset));
                     }
 
                     if (current.ruleName != null) {
@@ -971,42 +966,19 @@ public class TimezoneRepositoryCompiler {
 
     }
 
-    private static void handleNegativeDST(Map<String, List<RuleLine>> ruleMap) {
-        for (String s : ruleMap.keySet()) {
-            boolean hasNegativeDST = false;
-            for (RuleLine ruleLine : ruleMap.get(s)) {
-                if (ruleLine.pattern.getSavings() < 0) {
-                    hasNegativeDST = true;
-                    break;
-                }
-            }
-            if (hasNegativeDST) {
-                List<RuleLine> ruleLines = new ArrayList<RuleLine>();
-                for (RuleLine ruleLine : ruleMap.get(s)) {
-                    ruleLines.add(ruleLine.withDstAdjustment());
-                }
-                ruleMap.put(s, ruleLines);
-            }
-        }
-    }
-
-    private static DST getRuleOffset(
+    private static int getRuleOffset(
         List<RuleLine> rules,
         int rawOffset,
-        DST oldDst,
+        int oldDst,
         int year,
         long startTime
     ) {
 
         List<RuleLine> lines = new ArrayList<RuleLine>(rules.size());
-        boolean hasNegativeDST = false;
 
         for (RuleLine rline : rules) {
             if ((rline.from <= year) && (rline.to >= year)) {
                 lines.add(rline);
-            }
-            if (rline.pattern.getSavings() < 0) {
-                hasNegativeDST = true;
             }
         }
 
@@ -1015,23 +987,23 @@ public class TimezoneRepositoryCompiler {
             int prevSavings = (
                 (i > 0)
                 ? lines.get(i - 1).pattern.getSavings()
-                : oldDst.amount);
+                : oldDst);
             int shift =
                 getShift(rline.pattern.getIndicator(), rawOffset, prevSavings);
             if (startTime >= rline.getPosixTime(year, shift)) {
-                return new DST(rline.pattern);
+                return rline.pattern.getSavings();
             }
         }
 
-        return (lines.isEmpty() ? (hasNegativeDST ? new DST(0, true) : ZERO_DST) : oldDst);
+        return (lines.isEmpty() ? 0 : oldDst);
 
     }
 
-    private static DST addTransitions(
+    private static int addTransitions(
         List<ZonalTransition> transitions,
         List<DaylightSavingRule> rules,
         ZoneLine zoneLine,
-        DST dstOffset,
+        int dstOffset,
         List<RuleLine> ruleLines,
         int startYear,
         long startTime
@@ -1064,7 +1036,7 @@ public class TimezoneRepositoryCompiler {
                     continue;
                 }
 
-                int oldDst = dstOffset.amount;
+                int oldDst = dstOffset;
                 int ruleShift =
                     getShift(
                         line.pattern.getIndicator(),
@@ -1083,7 +1055,7 @@ public class TimezoneRepositoryCompiler {
                     exit = true;
                     break;
                 } else {
-                    dstOffset = new DST(line.pattern);
+                    dstOffset = line.pattern.getSavings();
                 }
 
                 addTransition(
@@ -1091,8 +1063,8 @@ public class TimezoneRepositoryCompiler {
                     new ZonalTransition(
                         tt,
                         zoneLine.rawOffset + oldDst,
-                        zoneLine.rawOffset + dstOffset.amount,
-                        dstOffset.maxmode ? Integer.MAX_VALUE : dstOffset.amount));
+                        zoneLine.rawOffset + dstOffset,
+                        dstOffset));
             }
         }
 
@@ -1119,18 +1091,14 @@ public class TimezoneRepositoryCompiler {
 
         if (last.getPosixTime() == tt) {
             // TODO: Wird das wirklich gebraucht?
-            boolean maxmode = (newTransition.isDaylightSaving() && (dst == 0));
             ZonalTransition zt =
                 new ZonalTransition(
                     last.getPosixTime(),
                     last.getPreviousOffset(),
                     total,
-                    maxmode ? Integer.MAX_VALUE : dst);
+                    dst);
             transitions.set(index, zt);
-        } else if (
-            (last.getTotalOffset() != total)
-            || (last.getDaylightSavingOffset() != dst)
-        ) {
+        } else if ((last.getTotalOffset() != total) || (last.getDaylightSavingOffset() != dst)) {
             transitions.add(newTransition);
         }
 
@@ -1447,10 +1415,7 @@ public class TimezoneRepositoryCompiler {
         int len = timeOfDay.length();
         char c = timeOfDay.charAt(len - 1);
 
-        if (
-            (len == 1)
-            && (c == '-')
-        ) {
+        if ((len == 1) && (c == '-')) {
             return ret;
         }
 
@@ -1488,31 +1453,41 @@ public class TimezoneRepositoryCompiler {
         int h = 0;
         int m = 0;
         int s = 0;
+        boolean negative = false;
 
         for (int i = 0; st.hasMoreTokens(); i++) {
             String part = st.nextToken();
 
-            if (part.charAt(0) == '-') {
-                throw new IllegalArgumentException(timeOfDay);
-            }
-
             switch (i) {
                 case 0:
-                    h = Integer.parseInt(part);
+                    if (part.charAt(0) == '-') {
+                        negative = true;
+                        h = Integer.parseInt(part.substring(1));
+                    } else if (part.charAt(0) == '+') { // possible exotic edge case
+                        h = Integer.parseInt(part.substring(1));
+                    } else {
+                        h = Integer.parseInt(part);
+                    }
                     break;
                 case 1:
                     m = Integer.parseInt(part);
                     break;
                 case 2:
-                    s = Integer.parseInt(part);
+                    int dot = part.indexOf('.');
+                    if (dot == -1) { // standard case in second precision
+                        s = Integer.parseInt(part);
+                    } else { // truncate subseconds, we don't handle this conceptual nonsense
+                        s = Integer.parseInt(part.substring(0, dot));
+                    }
                     break;
                 default:
-                    // break;
+                    // no-op
             }
 
         }
 
-        ret[0] =  h * 3600 + m * 60 + s;
+        int total = h * 3600 + m * 60 + s;
+        ret[0] = (negative ? -total : total);
         return ret;
 
     }
@@ -1626,10 +1601,6 @@ public class TimezoneRepositoryCompiler {
         //~ Konstruktoren -------------------------------------------------
 
         RuleLine(String[] fields) {
-            this(fields, false);
-        }
-
-        private RuleLine(String[] fields, boolean copyMode) {
             super();
 
             String[] f = new String[fields.length];
@@ -1658,9 +1629,6 @@ public class TimezoneRepositoryCompiler {
                 int[] timeInfo = getTimeInfo(fields[7]);
                 OffsetIndicator idx = OffsetIndicator.values()[timeInfo[1]];
                 int dst = getOffset(fields[8]);
-                if (copyMode && (dst == 0)) {
-                    dst = Integer.MAX_VALUE;
-                }
                 this.pattern = getPattern(month, on, timeInfo[0], idx, dst);
 
                 this.letter = (fields[9].equals("-") ? "" : fields[9]);
@@ -1675,12 +1643,6 @@ public class TimezoneRepositoryCompiler {
         }
 
         //~ Methoden ------------------------------------------------------
-
-        RuleLine withDstAdjustment() {
-
-            return new RuleLine(this.fields, true);
-
-        }
 
         long getPosixTime(
             int year,
@@ -1702,15 +1664,13 @@ public class TimezoneRepositoryCompiler {
         ) {
 
             Month m = Month.valueOf(month);
-            PlainTime time =
-                PlainTime.midnightAtStartOfDay().plus(timeOfDay, SECONDS);
 
             if (isDigit(on.charAt(0))) {
 
                 return GregorianTimezoneRule.ofFixedDay(
                     m,
                     Integer.parseInt(on),
-                    time,
+                    timeOfDay,
                     indicator,
                     dst
                 );
@@ -1720,7 +1680,7 @@ public class TimezoneRepositoryCompiler {
                 return GregorianTimezoneRule.ofLastWeekday(
                     m,
                     getWeekday(on.substring(4)),
-                    time,
+                    timeOfDay,
                     indicator,
                     dst);
 
@@ -1748,7 +1708,7 @@ public class TimezoneRepositoryCompiler {
                         m,
                         dayOfMonth,
                         dayOfWeek,
-                        time,
+                        timeOfDay,
                         indicator,
                         dst);
                 } else {
@@ -1756,7 +1716,7 @@ public class TimezoneRepositoryCompiler {
                         m,
                         dayOfMonth,
                         dayOfWeek,
-                        time,
+                        timeOfDay,
                         indicator,
                         dst);
                 }
@@ -2032,44 +1992,6 @@ public class TimezoneRepositoryCompiler {
                     "Leap line not stationary: " + Arrays.toString(fields));
             }
 
-        }
-
-    }
-
-    private static class DST {
-
-        //~ Instanzvariablen ----------------------------------------------
-
-        final int amount;
-        final boolean maxmode;
-
-        //~ Konstruktoren -------------------------------------------------
-
-        private DST() {
-            this(0, false);
-
-        }
-
-        DST(DaylightSavingRule rule) {
-            super();
-
-            this.amount = rule.getSavings();
-            this.maxmode = (rule.isSaving() && (this.amount == 0));
-        }
-
-        DST(int amount) {
-            this(amount, false);
-
-        }
-
-        DST(
-            int amount,
-            boolean maxmode
-        ) {
-            super();
-
-            this.amount = amount;
-            this.maxmode = maxmode;
         }
 
     }

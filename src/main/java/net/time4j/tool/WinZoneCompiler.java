@@ -1,6 +1,6 @@
 /*
  * -----------------------------------------------------------------------
- * Copyright © 2013-2018 Meno Hochschild, <http://www.menodata.de/>
+ * Copyright © 2013-2021 Meno Hochschild, <http://www.menodata.de/>
  * -----------------------------------------------------------------------
  * This file (WinZoneCompiler.java) is part of project Time4J.
  *
@@ -21,8 +21,6 @@
 
 package net.time4j.tool;
 
-import net.time4j.tz.Timezone;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -39,6 +37,8 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
+
+import net.time4j.tz.Timezone;
 
 
 /**
@@ -85,13 +85,12 @@ public class WinZoneCompiler {
             throw new IllegalArgumentException(
                 "Directory required: " + workdir);
         }
-
     }
 
     //~ Methoden ----------------------------------------------------------
 
-	/**
-	 * <p>Main executable method which accepts a command line option for
+    /**
+     * <p>Main executable method which accepts a command line option for
      * the editable work directory containing the original CLDR-file. </p>
      *
      * <p>Recognized options are: </p>
@@ -107,9 +106,9 @@ public class WinZoneCompiler {
      * @param   args    command line parameters
      * @throws  IllegalArgumentException if the working directory is wrong
      * @throws  IOException in case of any I/O-failure
-	 */
-	/*[deutsch]
-	 * <p>Ausf&uuml;hrbare Hauptmethode zum Kompilieren der originalen
+    */
+    /*[deutsch]
+     * <p>Ausf&uuml;hrbare Hauptmethode zum Kompilieren der originalen
      * CLDR-Datei mit Hilfe eins Arbeitsverzeichnisses. </p>
      *
      * <p>Unterst&uuml;tzte Kommandozeilenparameter sind: </p>
@@ -125,9 +124,8 @@ public class WinZoneCompiler {
      * @param   args    Kommandozeilenparameter
      * @throws  IllegalArgumentException bei falschem Arbeitsverzeichnis
      * @throws  IOException bei Zugriffsfehlern
-	 */
-	public static void main(String[] args) throws IOException {
-
+     */
+    public static void main(String[] args) throws IOException {
         if (
             (args == null)
             || (args.length == 0)
@@ -167,8 +165,7 @@ public class WinZoneCompiler {
         String version = data.get(VERSION_KEY).keySet().iterator().next();
         data.remove(VERSION_KEY);
         compiler.writeRepository(version, data);
-
-	}
+    }
 
     /**
      * <p>Determines the working directory of this instance. </p>
@@ -181,15 +178,11 @@ public class WinZoneCompiler {
      * @return  Verzeichnis als {@code File}-Objekt
      */
     public File getWorkingDirectory() {
-
         return this.workdir;
-
     }
 
     private Map<String, Map<String, String>> loadCLDR() throws IOException {
-
-        Map<String, Map<String, String>> repository =
-            new HashMap<String, Map<String, String>>();
+        Map<String, Map<String, String>> repository = new HashMap<>();
         InputStream is = null;
 
         try {
@@ -208,10 +201,8 @@ public class WinZoneCompiler {
                     transfer(repository, element);
                 }
             }
-        } catch (FactoryConfigurationError error) {
+        } catch (FactoryConfigurationError | XMLStreamException error) {
             throw new IllegalStateException(error);
-        } catch (XMLStreamException ex) {
-            throw new IllegalStateException(ex);
         } finally {
             if (is != null) {
                 is.close();
@@ -219,33 +210,41 @@ public class WinZoneCompiler {
         }
 
         return repository;
-
     }
 
     private static void transfer(
         Map<String, Map<String, String>> repository,
         StartElement element
     ) {
-
-        if (element.getName().getLocalPart().equals("mapZone")) {
-            String country = getAttribute(element, "territory");
-            String id = getAttribute(element, "type");
-            String name = getAttribute(element, "other");
-            fill(repository, country, id, name);
-        } else if (element.getName().getLocalPart().equals("version")) {
-            String version = getAttribute(element, "number");
-            setVersion(repository, version);
+        switch (element.getName().getLocalPart()) {
+            case "mapZone":
+                String country = getAttribute(element, "territory");
+                String id = getAttribute(element, "type");
+                String name = getAttribute(element, "other");
+                fill(repository, country, id, name);
+                break;
+            case "version":
+                {
+                    String version = getAttribute(element, "number");
+                    setVersion(repository, version);
+                    break;
+                }
+            case "mapTimezones":
+                {
+                    String version = getAttribute(element, "typeVersion");
+                    enhanceVersion(repository, version);
+                    break;
+                }
+            default:
+                break;
         }
-
     }
 
     private static String getAttribute(
         StartElement element,
         String name
     ) {
-
         return element.getAttributeByName(new QName(name)).getValue();
-
     }
 
     private static void fill(
@@ -254,11 +253,10 @@ public class WinZoneCompiler {
         String id,
         String name
     ) {
-
         Map<String, String> data = repository.get(country);
 
         if (data == null) {
-            data = new HashMap<String, String>();
+            data = new HashMap<>();
             repository.put(country, data);
         }
 
@@ -266,44 +264,51 @@ public class WinZoneCompiler {
             // assumption: no ambivalent mapping from ids to names
             data.put("WINDOWS~" + Timezone.normalize(tzid).canonical(), name);
         }
-
-    }
+   }
 
     private static void setVersion(
         Map<String, Map<String, String>> repository,
         String version
     ) {
-
         Map<String, String> entry = repository.get(VERSION_KEY);
 
         if (entry == null) {
-            entry = Collections.singletonMap(version, version);
-            repository.put(VERSION_KEY, entry);
+            entry = Collections.singletonMap(version, "");
         }
+        
+        repository.put(VERSION_KEY, entry);        
+    }
 
+    private static void enhanceVersion(
+        Map<String, Map<String, String>> repository,
+        String version
+    ) {
+        Map<String, String> entry = repository.get(VERSION_KEY);
+        StringBuilder sb = new StringBuilder(entry.keySet().iterator().next());
+        sb.append(" (");
+        sb.append(version);
+        sb.append(')');
+        String key = sb.toString();
+        repository.put(VERSION_KEY, Collections.singletonMap(key, ""));  
     }
 
     private void writeRepository(
         String version,
         Map<?, ?> data
     ) throws IOException {
-
         File target = new File(this.workdir, SER_FILE);
-        ObjectOutputStream oos =
-            new ObjectOutputStream(
-                new FileOutputStream(target));
-        try {
+        try (
+            ObjectOutputStream oos = 
+                new ObjectOutputStream(
+                    new FileOutputStream(target))
+        ) {
             oos.writeUTF(version);
             oos.writeObject(data);
             System.out.println("Successfully created: " + target);
-        } finally {
-            oos.close();
         }
- 
     }
 
     private static void printOptions() {
-
         String help =
             "Usage of winzone compiler with command line options:"
             + LF
@@ -313,7 +318,6 @@ public class WinZoneCompiler {
             + "data by giving next command line argument as absolute path"
             + LF;
         System.out.println(help);
-
     }
 
 }

@@ -1,6 +1,6 @@
 /*
  * -----------------------------------------------------------------------
- * Copyright © 2013-2018 Meno Hochschild, <http://www.menodata.de/>
+ * Copyright © 2013-2021 Meno Hochschild, <http://www.menodata.de/>
  * -----------------------------------------------------------------------
  * This file (TimezoneRepositoryCompiler.java) is part of project Time4J.
  *
@@ -139,7 +139,7 @@ public class TimezoneRepositoryCompiler {
     private static final List<String> FILES_ACCEPTED_BY_COMPILER;
 
     static {
-        List<String> tmp2 = new ArrayList<String>();
+        List<String> tmp2 = new ArrayList<>();
         tmp2.add("africa");
         tmp2.add("antarctica");
         tmp2.add("asia");
@@ -604,12 +604,10 @@ public class TimezoneRepositoryCompiler {
             contents = loadArchive(file);
         }
 
-        Map<String, List<ZoneLine>> zones =
-            new TreeMap<String, List<ZoneLine>>();
-        Map<String, List<RuleLine>> rules =
-            new HashMap<String, List<RuleLine>>();
-        List<LinkLine> links = new ArrayList<LinkLine>();
-        List<LeapLine> leaps = new ArrayList<LeapLine>();
+        Map<String, List<ZoneLine>> zones = new TreeMap<>();
+        Map<String, List<RuleLine>> rules = new HashMap<>();
+        List<LinkLine> links = new ArrayList<>();
+        List<LeapLine> leaps = new ArrayList<>();
         PlainDate expires = PlainDate.axis().getMinimum();
         boolean expireMode = false;
 
@@ -695,7 +693,7 @@ public class TimezoneRepositoryCompiler {
                             List<RuleLine> ruleLines = rules.get(ruleName);
 
                             if (ruleLines == null) {
-                                ruleLines = new ArrayList<RuleLine>();
+                                ruleLines = new ArrayList<>();
                                 rules.put(ruleName, ruleLines);
                             }
 
@@ -704,7 +702,7 @@ public class TimezoneRepositoryCompiler {
                         }
                     } else if (fields[0].equals("Zone")) {
                         zoneID = fields[1];
-                        List<ZoneLine> zoneLines = new ArrayList<ZoneLine>();
+                        List<ZoneLine> zoneLines = new ArrayList<>();
                         ZoneLine zl = new ZoneLine(zoneID, fields);
                         zoneLines.add(zl);
                         zones.put(zoneID, zoneLines);
@@ -789,10 +787,8 @@ public class TimezoneRepositoryCompiler {
 
         for (Map.Entry<String, List<ZoneLine>> zoneEntry : zoneMap.entrySet()) {
             String zoneID = zoneEntry.getKey();
-            List<ZonalTransition> transitions =
-                new ArrayList<ZonalTransition>();
-            List<DaylightSavingRule> rules =
-                new ArrayList<DaylightSavingRule>();
+            List<ZonalTransition> transitions = new ArrayList<>();
+            List<DaylightSavingRule> rules = new ArrayList<>();
             ZoneLine previous = null;
             int initialOffset = 0;
             int dstOffset = 0;
@@ -910,9 +906,9 @@ public class TimezoneRepositoryCompiler {
         List<LinkLine> links
     ) throws IOException {
 
-        List<String> sortedZones = new ArrayList<String>(zones);
-        Map<String, String> aliases = new HashMap<String, String>();
-        Map<String, Integer> normalized = new HashMap<String, Integer>();
+        List<String> sortedZones = new ArrayList<>(zones);
+        Map<String, String> aliases = new HashMap<>();
+        Map<String, Integer> normalized = new HashMap<>();
 
         for (LinkLine link : links) {
             aliases.put(link.from, link.to);
@@ -974,7 +970,7 @@ public class TimezoneRepositoryCompiler {
         long startTime
     ) {
 
-        List<RuleLine> lines = new ArrayList<RuleLine>(rules.size());
+        List<RuleLine> lines = new ArrayList<>(rules.size());
 
         for (RuleLine rline : rules) {
             if ((rline.from <= year) && (rline.to >= year)) {
@@ -1155,11 +1151,11 @@ public class TimezoneRepositoryCompiler {
             return Collections.emptyMap();
         }
 
-        Map<String, String> contents = new HashMap<String, String>();
+        Map<String, String> contents = new HashMap<>();
         TarInputStream inStream = null;
 
         try {
-			inStream =
+            inStream =
                 new TarInputStream(
                     new GZIPInputStream(
                         new FileInputStream(archive)));
@@ -1205,7 +1201,7 @@ public class TimezoneRepositoryCompiler {
         }
 
         InputStream inStream = null;
-        Map<String, String> contents = new HashMap<String, String>();
+        Map<String, String> contents = new HashMap<>();
 
         try {
             for (File subdir : directory.listFiles()) {
@@ -1270,7 +1266,7 @@ public class TimezoneRepositoryCompiler {
 
     private String getNewestArchiveVersion(Comparator<String> comp) {
 
-        List<String> versions = new ArrayList<String>();
+        List<String> versions = new ArrayList<>();
 
         for (File file : this.workdir.listFiles()) {
             if (file.isFile()) {
@@ -1296,7 +1292,7 @@ public class TimezoneRepositoryCompiler {
 
     private String getNewestDirectoryVersion(Comparator<String> comp) {
 
-        List<String> versions = new ArrayList<String>();
+        List<String> versions = new ArrayList<>();
 
         for (File file : this.workdir.listFiles()) {
             if (file.isDirectory()) {
@@ -1608,34 +1604,34 @@ public class TimezoneRepositoryCompiler {
             this.fields = f;
 
             try {
-                this.name = fields[1];
+                this.name = this.fields[1];
 
-                if ("minimum".startsWith(fields[2])) {
+                if ("minimum".startsWith(this.fields[2])) {
                     this.from = Integer.MIN_VALUE;
                 } else {
-                    this.from = Integer.parseInt(fields[2]);
+                    this.from = Integer.parseInt(this.fields[2]);
                 }
 
-                if ("maximum".startsWith(fields[3])) {
+                if ("maximum".startsWith(this.fields[3])) {
                     this.to = Integer.MAX_VALUE;
-                } else if (fields[3].equals("only")) {
+                } else if (this.fields[3].equals("only")) {
                     this.to = this.from;
                 } else {
-                    this.to = Integer.parseInt(fields[3]);
+                    this.to = Integer.parseInt(this.fields[3]);
                 }
 
-                int month = getMonth(fields[5]);
-                String on = fields[6];
-                int[] timeInfo = getTimeInfo(fields[7]);
+                int month = getMonth(this.fields[5]);
+                String on = this.fields[6];
+                int[] timeInfo = getTimeInfo(this.fields[7]);
                 OffsetIndicator idx = OffsetIndicator.values()[timeInfo[1]];
-                int dst = getOffset(fields[8]);
+                int dst = getOffset(this.fields[8]);
                 this.pattern = getPattern(month, on, timeInfo[0], idx, dst);
 
-                this.letter = (fields[9].equals("-") ? "" : fields[9]);
+                this.letter = (this.fields[9].equals("-") ? "" : this.fields[9]);
 
             } catch (RuntimeException re) {
                 throw new IllegalStateException(
-                    "Actual rule line: " + Arrays.toString(fields),
+                    "Actual rule line: " + Arrays.toString(this.fields),
                     re
                 );
             }
